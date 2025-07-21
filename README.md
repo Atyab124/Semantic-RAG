@@ -1,6 +1,6 @@
 # 🤖 RAG Assistant with n8n, Ollama & Supabase
 
-A Retrieval-Augmented Generation (RAG) assistant built using [n8n](https://n8n.io), [Ollama](https://ollama.ai), and [Supabase](https://supabase.com). This project enables local document processing and semantic retrieval using open-source AI models with full control over execution via Docker Desktop.
+A Retrieval-Augmented Generation (RAG) assistant built using [n8n](https://n8n.io), [Ollama](https://ollama.ai), and [Supabase](https://supabase.com). This project enables local document processing and semantic RAG using open-source AI models with full control over execution via Docker Desktop.
 
 ---
 
