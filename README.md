@@ -6,11 +6,10 @@ A Retrieval-Augmented Generation (RAG) assistant built using [n8n](https://n8n.i
 
 ## 🧰 Features
 
-- Chunk and embed user-uploaded documents
+- Semantic chunk and embed user-uploaded documents
 - Store semantic embeddings in Supabase (via pgvector)
 - Use RAG to answer questions based on your knowledge base
-- Shuts down AI models when not in use for memory efficiency
-- Fully local, private, and open-source
+- Local Execution, private, and **open-source**
 
 ---
 
