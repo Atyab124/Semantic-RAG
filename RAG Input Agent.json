@@ -1,0 +1,341 @@
+{
+  "name": "RAG Input Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Information",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Content",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        160
+      ],
+      "id": "47b0d25e-013d-45d0-9a39-3792c28924ea",
+      "name": "On form submission",
+      "webhookId": "18a80b34-d20b-4558-b541-20fc75106ae6"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"chunks\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\"chunks\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        200,
+        80
+      ],
+      "id": "00d680ef-eb59-4289-8265-67860b79f2c1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "9e109c1c-4690-4035-982b-a61d14653eb3",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "mi5KTnPEDFxHdRBu",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\\n{{ $json.Content }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a semantic chunking engine.\n\nRead the input text and break it into semantically meaningful and logically complete chunks.\n\nReturn your output as raw JSON with the key \"chunks\", like this:\n{\n  \"chunks\": [\n    \"First chunk.\",\n    \"Second chunk.\",\n    \"Third chunk.\"\n  ]\n}\n\n⚠️ Return only the JSON object. Do NOT wrap it in quotes, markdown, or any tool format. Just raw JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -105
+      ],
+      "id": "e4ee84aa-966a-4c46-87d4-eba4c60e1ce7",
+      "name": "Chunker",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the array of chunks from input\nconst chunks = items[0].json.output.chunks;\n\nconst results = [];\n\nfor (let i = 0; i < chunks.length; i++) {\n  results.push({\n    json: {\n      chunk: chunks[i],\n      //index: i // Optional: add index for tracking\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -105
+      ],
+      "id": "64f99cfd-ef67-4a54-921c-9a4747bf2dd8",
+      "name": "Sequentializer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $json.chunk }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        -180
+      ],
+      "id": "2d059f87-6634-4d61-8b47-08d4982727cf",
+      "name": "Embedder"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1060,
+        0
+      ],
+      "id": "fc55bb68-0965-4c96-97a0-390b1c85fd94",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Initialize arrays\nlet chunks = [];\nlet embeddings = [];\nlet title = \"Untitled\";\nlet created_at = \"None\";\nlet NoteID = \"None\";\n\n// Loop through all items to collect chunks, embeddings, and title\nfor (const item of items) {\n  if (item.json.chunk && item.json.id) {\n    chunks.push({ chunk: item.json.chunk, id: item.json.id });\n  }\n  if (item.json.embedding) {\n    embeddings.push(item.json.embedding);\n  }\n  if (item.json.Title) {\n    title = item.json.Title;\n  }\n  if (item.json.submittedAt) {\n    created_at = item.json.submittedAt;\n  }\n  if (item.json.NoteID) {\n    NoteID = item.json.NoteID;\n  }\n}\n\n// Return one entry per output for Supabase\nconst output = chunks.map((chunkData, i) => {\n  return {\n    json: {\n      content: chunkData.chunk || \"\",\n      embedding: embeddings[i] || null,\n      metadata: {\n        title: title,\n        created_at: created_at,\n        note_id: NoteID\n      }\n    }\n  };\n});\n\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "d81b5ac2-2e0a-4a83-a76c-5b6b4ca0d73b",
+      "name": "Final merge"
+    },
+    {
+      "parameters": {
+        "tableId": "documents",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.content }}"
+            },
+            {
+              "fieldId": "embedding",
+              "fieldValue": "={{ $json.embedding }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.metadata }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        0
+      ],
+      "id": "786fb030-8610-47a2-ba45-e49185f606d0",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gFBq3cj1v4g40eAr",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "dataPropertyName": "id"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -105
+      ],
+      "id": "b2bfc3c9-3f0c-4b99-bdb2-b1f5f59e9a3c",
+      "name": "Chunk ID"
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "dataPropertyName": "NoteID"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        800,
+        160
+      ],
+      "id": "60ec8613-ccea-4deb-8cf8-414f7c13766a",
+      "name": "NoteID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Chunker",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "NoteID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Chunker",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chunker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunker": {
+      "main": [
+        [
+          {
+            "node": "Sequentializer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sequentializer": {
+      "main": [
+        [
+          {
+            "node": "Chunk ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embedder": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Final merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final merge": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk ID": {
+      "main": [
+        [
+          {
+            "node": "Embedder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "NoteID": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "513bd47d-a9a0-407f-9d85-059c8f60e441",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8e9fa353229a6d64532200f38fc6f9df4be5aeab12eefe769d488aa74309dbf9"
+  },
+  "id": "wIl1LhYxeC4w1M9h",
+  "tags": []
+}
