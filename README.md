@@ -76,13 +76,12 @@ Create your user account.
 
 ### a. Download the Workflow
 
-Download `rag-agent-workflow.json` from this repo.
+Download `RAG Agent Access.json` and `RAG Input Agent.json` from this repo.
 
 ### b. Import into n8n
 
 1. In n8n, go to **"Workflows" → "Import from File"**
-2. Select `rag-agent-workflow.json`
-3. Click **Import**
+2. Import `RAG Agent Access.json` and `RAG Input Agent.json` separately into different workflows
 
 ---
 
@@ -166,7 +165,8 @@ $$;
 ## 🧪 Running the Assistant
 
 ### 📝 Submitting Notes
-1. Open your workflow in n8n.
+
+1. Open `RAG Input Agent` workflow in n8n.
 
 2. Click **Execute Workflow.
 
@@ -176,9 +176,7 @@ $$;
 
     - **Content:** Raw body text
 
-4. Click **Execute Workflow.
-
-5. The workflow will:
+4. The workflow will:
 
     - Chunk content using Qwen 2.5
 
@@ -187,10 +185,19 @@ $$;
     - Store each chunk in Supabase
 
 ## 🔍 Asking Questions
-1. Click on the chat icon in the `RAG Access Agent`
+
+1. Click on the chat icon in the `RAG Access Agent` and input your query
 2. The assistant will:
      - Answer directly if confident
      - Or fetch from supabase for additional context.
+
+## Current Limitations
+
+  - Can only recieve input from manually entered forms, automated retrieval from local folders/other online platforms support will be coming soon.
+
+  - Only Supports text style input, support for other types of documents is in the works
+    
+  - Needs a powerful GPU, developed on a 4GB 1650ti Mobile, which is the recommended bare minimum with the default models.
 
 ## 💡 Tips
 
