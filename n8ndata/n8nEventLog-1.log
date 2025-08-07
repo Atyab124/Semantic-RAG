@@ -1,0 +1,2 @@
+{"__type":"$$EventMessageAudit","id":"ca2cfa03-084f-42da-b36c-80e1971aba52","ts":"2025-08-07T13:47:16.456+00:00","eventName":"n8n.audit.user.login.success","message":"n8n.audit.user.login.success","payload":{"userId":"7c1b949f-a013-49dd-8781-4d4bd11823ef","_email":"atyabtosif@gmail.com","_firstName":"Atyab ","_lastName":"Tosif","globalRole":"global:owner","authenticationMethod":"email"}}
+{"__type":"$$EventMessageConfirm","confirm":"ca2cfa03-084f-42da-b36c-80e1971aba52","ts":"2025-08-07T13:47:16.457+00:00","source":{"id":"0","name":"eventBus"}}
